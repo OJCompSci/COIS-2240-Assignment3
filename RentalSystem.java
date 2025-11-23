@@ -44,14 +44,28 @@ public class RentalSystem {
         if (vehicle == null) {
             return false;
         }
-        vehicles.add(vehicle);          // in‑memory
-        saveVehicle(vehicle);           // on disk (private helper)
+        // duplicate license plate check
+        for (Vehicle v : vehicles) {
+            if (v.getLicensePlate().equalsIgnoreCase(vehicle.getLicensePlate())) {
+                System.out.println("A vehicle with this license plate already exists.");
+                return false;
+            }
+        }
+        vehicles.add(vehicle);
+        saveVehicle(vehicle);           
         return true;
     }
 
     public boolean addCustomer(Customer customer) {
         if (customer == null) {
             return false;
+        }
+        // duplicate customer ID check
+        for (Customer c : customers) {
+            if (c.getCustomerId() == customer.getCustomerId()) {
+                System.out.println("A customer with this ID already exists.");
+                return false;
+            }
         }
         customers.add(customer);
         saveCustomer(customer);
