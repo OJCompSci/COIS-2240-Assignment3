@@ -2,6 +2,11 @@ import java.util.List;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+
 public class RentalSystem {
 	
 	private static RentalSystem instance;
@@ -9,6 +14,10 @@ public class RentalSystem {
     private List<Vehicle> vehicles;
     private List<Customer> customers;
     private RentalHistory rentalHistory;
+    
+    private static final String VEHICLE_FILE = "vehicles.txt";
+    private static final String CUSTOMER_FILE = "customers.txt";
+    private static final String RECORD_FILE  = "records.txt";
 	
 	private RentalSystem() 
 	{
@@ -26,35 +35,53 @@ public class RentalSystem {
     	return instance;
     }
     
-    public void addVehicle(Vehicle vehicle) {
-        vehicles.add(vehicle);
+    public boolean addVehicle(Vehicle vehicle) {
+        if (vehicle == null) {
+            return false;
+        }
+        vehicles.add(vehicle);          // in‑memory
+        saveVehicle(vehicle);           // on disk (private helper)
+        return true;
     }
 
-    public void addCustomer(Customer customer) {
+    public boolean addCustomer(Customer customer) {
+        if (customer == null) {
+            return false;
+        }
         customers.add(customer);
+        saveCustomer(customer);
+        return true;
     }
 
-    public void rentVehicle(Vehicle vehicle, Customer customer, LocalDate date, double amount) {
+    public boolean rentVehicle(Vehicle vehicle, Customer customer,
+                               LocalDate date, double amount) {
         if (vehicle.getStatus() == Vehicle.VehicleStatus.Available) {
             vehicle.setStatus(Vehicle.VehicleStatus.Rented);
-            rentalHistory.addRecord(new RentalRecord(vehicle, customer, date, amount, "RENT"));
+            RentalRecord record =
+                    new RentalRecord(vehicle, customer, date, amount, "RENT");
+            rentalHistory.addRecord(record);
+            saveRecord(record);
             System.out.println("Vehicle rented to " + customer.getCustomerName());
+            return true;
         }
-        else {
-            System.out.println("Vehicle is not available for renting.");
-        }
+        System.out.println("Vehicle is not available for renting.");
+        return false;
     }
 
-    public void returnVehicle(Vehicle vehicle, Customer customer, LocalDate date, double extraFees) {
+    public boolean returnVehicle(Vehicle vehicle, Customer customer,
+                                 LocalDate date, double extraFees) {
         if (vehicle.getStatus() == Vehicle.VehicleStatus.Rented) {
             vehicle.setStatus(Vehicle.VehicleStatus.Available);
-            rentalHistory.addRecord(new RentalRecord(vehicle, customer, date, extraFees, "RETURN"));
+            RentalRecord record =
+                    new RentalRecord(vehicle, customer, date, extraFees, "RETURN");
+            rentalHistory.addRecord(record);
+            saveRecord(record);
             System.out.println("Vehicle returned by " + customer.getCustomerName());
+            return true;
         }
-        else {
-            System.out.println("Vehicle is not rented.");
-        }
-    }    
+        System.out.println("Vehicle is not rented.");
+        return false;
+    }   
 
     public void displayVehicles(Vehicle.VehicleStatus status) {
         // Display appropriate title based on status
@@ -139,5 +166,61 @@ public class RentalSystem {
             if (c.getCustomerId() == id)
                 return c;
         return null;
+    }
+    
+    private void saveVehicle(Vehicle vehicle) {
+    	try (PrintWriter out = new PrintWriter(new FileWriter(VEHICLE_FILE, true))) {
+            String type;
+            String extra;
+
+            if (vehicle instanceof Car) {
+                type = "CAR";
+                extra = String.valueOf(((Car) vehicle).getNumSeats());
+            } else if (vehicle instanceof Minibus) {
+                type = "MINIBUS";
+                extra = String.valueOf(((Minibus) vehicle).getInfo());
+            } else if (vehicle instanceof PickupTruck) {
+                type = "PICKUP";
+                extra = ((PickupTruck) vehicle).getCargoSize() + ";" +
+                        ((PickupTruck) vehicle).hasTrailer();
+            } else {
+                type = "UNKNOWN";
+                extra = "";
+            }
+
+            out.println(
+                    type + "," +
+                    vehicle.getLicensePlate() + "," +
+                    vehicle.getMake() + "," +
+                    vehicle.getModel() + "," +
+                    vehicle.getYear() + "," +
+                    extra + "," +
+                    vehicle.getStatus()
+            );
+        } catch (IOException e) {
+            System.out.println("Error saving vehicle: " + e.getMessage());
+        }
+    }
+    
+    private void saveCustomer(Customer customer) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(CUSTOMER_FILE, true))) {
+            out.println(customer.getCustomerId() + "," + customer.getCustomerName());
+        } catch (IOException e) {
+            System.out.println("Error saving customer: " + e.getMessage());
+        }
+    }
+
+    private void saveRecord(RentalRecord record) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(RECORD_FILE, true))) {
+            out.println(
+                    record.getRecordType() + "," +
+                    record.getVehicle().getLicensePlate() + "," +
+                    record.getCustomer().getCustomerId() + "," +
+                    record.getRecordDate().toString() + "," +
+                    record.getTotalAmount()
+            );
+        } catch (IOException e) {
+            System.out.println("Error saving record: " + e.getMessage());
+        }
     }
 }
