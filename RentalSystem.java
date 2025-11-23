@@ -7,6 +7,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.format.DateTimeFormatter;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.File;
+import java.time.format.DateTimeParseException;
+
 public class RentalSystem {
 	
 	private static RentalSystem instance;
@@ -223,4 +228,116 @@ public class RentalSystem {
             System.out.println("Error saving record: " + e.getMessage());
         }
     }
+    
+    public void loadData() {
+        loadVehicles();
+        loadCustomers();
+        loadRecords();
+    }
+    private void loadVehicles() {
+        File file = new File(VEHICLE_FILE);
+        if (!file.exists()) {
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length < 7) {
+                    continue; // skip malformed lines
+                }
+
+                String type = parts[0];
+                String plate = parts[1];
+                String make = parts[2];
+                String model = parts[3];
+                int year = Integer.parseInt(parts[4]);
+                String extra = parts[5];
+                String statusStr = parts[6];
+
+                Vehicle v = null;
+                if ("CAR".equals(type)) {
+                    int seats = Integer.parseInt(extra);
+                    v = new Car(make, model, year, seats);
+                } else if ("MINIBUS".equals(type)) {
+                    boolean accessible = Boolean.parseBoolean(extra);
+                    v = new Minibus(make, model, year, accessible);
+                } else if ("PICKUP".equals(type)) {
+                    String[] ex = extra.split(";");
+                    double cargo = Double.parseDouble(ex[0]);
+                    boolean hasTrailer = Boolean.parseBoolean(ex[1]);
+                    v = new PickupTruck(make, model, year, cargo, hasTrailer);
+                }
+
+                if (v != null) {
+                    v.setLicensePlate(plate);
+                    if ("Rented".equalsIgnoreCase(statusStr)) {
+                        v.setStatus(Vehicle.VehicleStatus.Rented);
+                    } else {
+                        v.setStatus(Vehicle.VehicleStatus.Available);
+                    }
+                    vehicles.add(v);
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("Error loading vehicles: " + e.getMessage());
+        }
+    }
+    private void loadCustomers() {
+        File file = new File(CUSTOMER_FILE);
+        if (!file.exists()) {
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length < 2) {
+                    continue;
+                }
+
+                int id = Integer.parseInt(parts[0]);
+                String name = parts[1];
+                customers.add(new Customer(id, name));
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("Error loading customers: " + e.getMessage());
+        }
+    }
+    private void loadRecords() {
+        File file = new File(RECORD_FILE);
+        if (!file.exists()) {
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length < 5) {
+                    continue;
+                }
+
+                String type = parts[0];
+                String plate = parts[1];
+                int customerId = Integer.parseInt(parts[2]);
+                LocalDate date = LocalDate.parse(parts[3]);
+                double amount = Double.parseDouble(parts[4]);
+
+                Vehicle v = findVehicleByPlate(plate);
+                Customer c = findCustomerById(customerId);
+                if (v == null || c == null) {
+                    continue;
+                }
+
+                RentalRecord record = new RentalRecord(v, c, date, amount, type);
+                rentalHistory.addRecord(record);
+            }
+        } catch (IOException | NumberFormatException | DateTimeParseException e) {
+            System.out.println("Error loading records: " + e.getMessage());
+        }
+    }
+
 }
