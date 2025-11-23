@@ -1,16 +1,16 @@
 import java.util.List;
 import java.time.LocalDate;
 import java.util.ArrayList;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.format.DateTimeFormatter;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.List;
 
 public class RentalSystem {
 	
@@ -352,6 +352,14 @@ public class RentalSystem {
         } catch (IOException | NumberFormatException | DateTimeParseException e) {
             System.out.println("Error loading records: " + e.getMessage());
         }
+    }
+    // getters for JavaFX GUI
+    public List<Vehicle> getAllVehicles() {
+        return Collections.unmodifiableList(vehicles);
+    }
+
+    public List<Customer> getAllCustomers() {
+        return Collections.unmodifiableList(customers);
     }
 
 }
