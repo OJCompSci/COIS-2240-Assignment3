@@ -36,4 +36,43 @@ public class VehicleRentalTest {
         assertThrows(IllegalArgumentException.class,
                 () -> car.setLicensePlate("A"));
     }
+    
+    // 5) rent: status changes and boolean true
+    @Test
+    void testRentVehicleChangesStatus() {
+        RentalSystem rs = RentalSystem.getInstance();
+
+        Car car = new Car("toyota", "corolla", 2020, 5);
+        car.setLicensePlate("AB1234");
+        Customer cust = new Customer(1, "Alice");
+
+        assertTrue(rs.addVehicle(car));
+        assertTrue(rs.addCustomer(cust));
+        assertEquals(Vehicle.VehicleStatus.Available, car.getStatus());
+
+        boolean rented = rs.rentVehicle(car, cust, java.time.LocalDate.now(), 100.0);
+        assertTrue(rented);
+        assertEquals(Vehicle.VehicleStatus.Rented, car.getStatus());
+    }
+
+    // 6) return: status changes back and boolean true
+    @Test
+    void testReturnVehicleChangesStatusBack() {
+        RentalSystem rs = RentalSystem.getInstance();
+
+        Car car = new Car("honda", "civic", 2021, 4);
+        car.setLicensePlate("CD5678");
+        Customer cust = new Customer(2, "Bob");
+
+        assertTrue(rs.addVehicle(car));
+        assertTrue(rs.addCustomer(cust));
+
+        assertTrue(rs.rentVehicle(car, cust, java.time.LocalDate.now(), 80.0));
+        assertEquals(Vehicle.VehicleStatus.Rented, car.getStatus());
+
+        boolean returned = rs.returnVehicle(car, cust, java.time.LocalDate.now(), 0.0);
+        assertTrue(returned);
+        assertEquals(Vehicle.VehicleStatus.Available, car.getStatus());
+    }
+
 }
