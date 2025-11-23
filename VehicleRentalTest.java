@@ -74,5 +74,12 @@ public class VehicleRentalTest {
         assertTrue(returned);
         assertEquals(Vehicle.VehicleStatus.Available, car.getStatus());
     }
-
+    // 7) getInstance always returns same object
+    @Test
+    void testSingletonSameInstance() {
+        RentalSystem r1 = RentalSystem.getInstance();
+        RentalSystem r2 = RentalSystem.getInstance();
+        assertSame(r1, r2);
+    }
 }
+
